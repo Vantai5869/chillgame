@@ -612,6 +612,206 @@ const Net=(function(){
   return {create,session,bar,roomLink,codeBox,lobby};
 })();
 
+/* ===== GK_BEGIN: engine caro mạnh (dùng cho phím Space) ===== */
+const GK=(function(){
+  /* --- bảng phân loại thế cờ trên một đường 9 ô, ô giữa là quân vừa đặt ---
+     0 trống, 1 quân mình, 2 bị chặn (quân đối phương / ngoài bàn)
+     7 năm, 6 bốn mở (≥2 điểm thành 5), 5 bốn, 4 ba mở, 3 ba, 2 hai mở, 1 hai, 0 không */
+  const T=new Int8Array(6561).fill(-1);
+  function run(a){let l=4; while(l>0&&a[l-1]===1) l--; let r=4; while(r<8&&a[r+1]===1) r++; return r-l+1;}
+  function fives(a){let n=0; for(let i=0;i<9;i++) if(a[i]===0){a[i]=1; if(run(a)>=5) n++; a[i]=0;} return n;}
+  function lvl3(a){ // 2: sau 1 nước có bốn mở, 1: sau 1 nước có bốn
+    let b=0;
+    for(let i=0;i<9;i++) if(a[i]===0){a[i]=1; const f=fives(a); a[i]=0; if(f>=2) return 2; if(f===1) b=1;}
+    return b;
+  }
+  function cls(a){
+    if(run(a)>=5) return 7;
+    const f=fives(a); if(f>=2) return 6; if(f===1) return 5;
+    const t=lvl3(a); if(t===2) return 4; if(t===1) return 3;
+    let b=0;
+    for(let i=0;i<9;i++) if(a[i]===0){a[i]=1; const t2=lvl3(a); a[i]=0; if(t2===2) return 2; if(t2===1) b=1;}
+    return b;
+  }
+  function code(k){
+    let v=T[k]; if(v>=0) return v;
+    const a=new Array(9); let x=k;
+    for(let i=8;i>=0;i--){ if(i===4){a[4]=1; continue;} a[i]=x%3; x=(x-a[i])/3; }
+    v=cls(a); T[k]=v; return v;
+  }
+
+  const WIN=1e9, S5=1e7, S4O=1e6, S43=5e5, S33=1e5;
+  function make(list){
+    // list: [[r,c,p]] với p là 'X' hoặc 'O'
+    let r0=1e9,r1=-1e9,c0=1e9,c1=-1e9;
+    for(const [r,c] of list){r0=Math.min(r0,r); r1=Math.max(r1,r); c0=Math.min(c0,c); c1=Math.max(c1,c);}
+    const M=12, W=c1-c0+1+2*M, H=r1-r0+1+2*M;
+    const g=new Int8Array(W*H), near=new Int16Array(W*H);
+    const DIR=[1,W,W+1,W-1];
+    const idx=(r,c)=>(r-r0+M)*W+(c-c0+M);
+    const inner=i=>{const y=(i/W)|0, x=i-y*W; return y>=6&&y<H-6&&x>=6&&x<W-6;};
+    let bb=[r0-r0+M, r1-r0+M, M, c1-c0+M]; // hộp chứa quân (toạ độ lưới)
+    const stack=[];
+    function put(i,p){
+      g[i]=p; const y=(i/W)|0, x=i-y*W;
+      stack.push(bb); bb=[Math.min(bb[0],y),Math.max(bb[1],y),Math.min(bb[2],x),Math.max(bb[3],x)];
+      for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++) near[i+dy*W+dx]++;
+    }
+    function take(i){
+      g[i]=0; bb=stack.pop();
+      for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++) near[i+dy*W+dx]--;
+    }
+    for(const [r,c,p] of list) put(idx(r,c),p==='X'?1:2);
+    stack.length=0;
+
+    const cnt=new Int8Array(8);
+    function counts(i,c){ // số đường theo từng loại thế nếu c đặt ở i
+      cnt.fill(0);
+      for(let d=0;d<4;d++){
+        const s=DIR[d]; let k=0;
+        for(let o=-4;o<=4;o++){ if(o===0) continue; const v=g[i+o*s]; k=k*3+(v===0?0:v===c?1:2); }
+        cnt[code(k)]++;
+      }
+      return cnt;
+    }
+    function score(i,c){
+      const n=counts(i,c);
+      if(n[7]) return S5;
+      if(n[6]||n[5]>=2) return S4O;
+      if(n[5]&&n[4]) return S43;
+      if(n[4]>=2) return S33;
+      return n[5]*2600+n[4]*2200+n[3]*420+n[2]*260+n[1]*40+(n[3]>=2?900:0)+(n[4]&&n[3]?1500:0);
+    }
+    function cands(){
+      const out=[];
+      for(let y=Math.max(6,bb[0]-2);y<=Math.min(H-7,bb[1]+2);y++)
+        for(let x=Math.max(6,bb[2]-2);x<=Math.min(W-7,bb[3]+2);x++){
+          const i=y*W+x; if(g[i]===0&&near[i]>0) out.push(i);
+        }
+      return out;
+    }
+    // các ô mà c đặt vào là thành 5 (chỉ xét các đường đi qua ô vừa đánh i)
+    function fivePts(i,c){
+      const pts=[];
+      for(let d=0;d<4;d++){
+        const s=DIR[d];
+        for(let o=-4;o<=4;o++){
+          const j=i+o*s; if(o===0||g[j]!==0||!inner(j)) continue;
+          if(counts(j,c)[7]&&!pts.includes(j)) pts.push(j);
+        }
+      }
+      return pts;
+    }
+    return {g,W,H,M,r0,c0,idx,put,take,score,cands,fivePts,counts,inner,
+      rc:i=>{const y=(i/W)|0, x=i-y*W; return [y-M+r0,x-M+c0];}};
+  }
+
+  /* --- VCF: thắng bằng chuỗi nước bốn liên tiếp --- */
+  function vcf(B,a,depth,deadline){
+    if(depth<=0||performance.now()>deadline) return -1;
+    const d=3-a, cs=B.cands(); let defFive=-1, nDef=0; const fours=[];
+    for(const i of cs){
+      const sa=B.score(i,a);
+      if(sa>=S5) return i;
+      if(B.score(i,d)>=S5){defFive=i; nDef++;}
+      const n=B.counts(i,a); if(n[5]||n[6]) fours.push([i,sa]);
+    }
+    if(nDef>1) return -1;
+    let list=fours;
+    if(nDef===1) list=fours.filter(x=>x[0]===defFive);
+    list.sort((x,y)=>y[1]-x[1]);
+    for(const [i,sa] of list){
+      if(sa>=S4O&&nDef===0) return i;
+      B.put(i,a);
+      const fp=B.fivePts(i,a);
+      let ok=false;
+      if(fp.length>=2) ok=nDef===0;
+      else if(fp.length===1){ B.put(fp[0],d); ok=vcf(B,a,depth-1,deadline)>=0; B.take(fp[0]); }
+      B.take(i);
+      if(ok) return i;
+    }
+    return -1;
+  }
+
+  /* --- tìm kiếm alpha-beta có cắt nước bắt buộc --- */
+  function search(B,c,depth,alpha,beta,ply,deadline,ctx){
+    if((++ctx.nodes&255)===0&&performance.now()>deadline) ctx.stop=true;
+    if(ctx.stop) return 0;
+    const o=3-c, cs=B.cands();
+    const sc=[]; let oFive=-1, nOF=0, myBest=0, opBest=0;
+    for(const i of cs){
+      const a=B.score(i,c), b=B.score(i,o);
+      if(a>=S5) return WIN-ply;
+      if(b>=S5){oFive=i; nOF++;}
+      if(a>myBest) myBest=a; if(b>opBest) opBest=b;
+      sc.push([i,a,b]);
+    }
+    if(nOF>=2) return -(WIN-ply-1);
+    let moves;
+    if(nOF===1) moves=[sc.find(x=>x[0]===oFive)];
+    else {
+      if(myBest>=S4O) return WIN-ply-2;
+      if(depth<=0){
+        sc.sort((x,y)=>(y[1]-x[1]));
+        const t=sc.slice(0,3).reduce((s,x)=>s+x[1],0);
+        sc.sort((x,y)=>(y[2]-x[2]));
+        const u=sc.slice(0,3).reduce((s,x)=>s+x[2],0);
+        return (t*1.15-u)/10;
+      }
+      // đối phương sắp có bốn mở: chỉ xét nước chặn hoặc nước bốn phản công
+      if(opBest>=S4O) moves=sc.filter(x=>x[2]>=S43||x[1]>=2600||B.counts(x[0],c)[5]);
+      else moves=sc;
+      moves.sort((x,y)=>(y[1]+y[2]*0.85)-(x[1]+x[2]*0.85));
+      moves=moves.slice(0,ply===0?14:9);
+    }
+    let best=-Infinity;
+    for(const [i] of moves){
+      B.put(i,c);
+      const v=-search(B,o,depth-1,-beta,-alpha,ply+1,deadline,ctx);
+      B.take(i);
+      if(ctx.stop) return best===-Infinity?0:best;
+      if(v>best){best=v; if(ply===0) ctx.best=i;}
+      if(v>alpha) alpha=v;
+      if(alpha>=beta) break;
+    }
+    return best;
+  }
+
+  /* --- nước tốt nhất cho bên p ('X' | 'O') --- */
+  function best(list,p,ms=1100){
+    if(!list.length) return [0,0];
+    const B=make(list), me=p==='X'?1:2, op=3-me;
+    if(list.length===1){const [r,c]=list[0]; return [r-1,c+1];}
+    const t0=performance.now(), deadline=t0+ms;
+    const cs=B.cands();
+    // 1. thắng ngay, 2. chặn năm
+    let opFive=[];
+    for(const i of cs){ if(B.score(i,me)>=S5) return B.rc(i); if(B.score(i,op)>=S5) opFive.push(i); }
+    if(opFive.length) return B.rc(opFive[0]);
+    // 3. có chuỗi bốn thắng chắc
+    const w=vcf(B,me,12,t0+ms*0.35); if(w>=0) return B.rc(w);
+    // 4. alpha-beta tăng dần độ sâu
+    const ctx={nodes:0,stop:false,best:-1}; let pick=-1, rootScores=new Map();
+    for(let d=2;d<=10;d+=2){
+      ctx.stop=false; ctx.best=-1;
+      const v=search(B,me,d,-Infinity,Infinity,0,deadline,ctx);
+      if(ctx.stop&&pick>=0) break;
+      if(ctx.best>=0) pick=ctx.best;
+      if(Math.abs(v)>WIN/2||performance.now()-t0>ms*0.5) break;
+    }
+    // 5. kiểm tra: sau nước này đối phương không có chuỗi bốn thắng
+    const order=cs.map(i=>[i,B.score(i,me)+B.score(i,op)*0.85]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+    const tryList=[pick,...order.filter(i=>i!==pick)].filter(i=>i>=0).slice(0,10);
+    for(const i of tryList){
+      B.put(i,me); const t=vcf(B,op,10,performance.now()+120); B.take(i);
+      if(t<0) return B.rc(i);
+    }
+    return B.rc(pick>=0?pick:order[0]);
+  }
+  return {best};
+})();
+/* ===== GK_END ===== */
+
 /* ===================== CARO ===================== */
 (function(){
   const $=id=>document.getElementById(id);
@@ -1060,7 +1260,14 @@ const Net=(function(){
       openSheet();
     },
     playing:()=>!net&&moves.length>0&&!over,
-    auto(){if(over||busy||isAI(turn)||!bounds||!myTurn()||(net&&net.side<0)||!$('sheet').classList.contains('hidden')) return; const [r,c]=aiMove(turn,3); human(r,c); ensureVisible(r,c);}};
+    auto(){
+      if(over||busy||isAI(turn)||!bounds||!myTurn()||(net&&net.side<0)||!$('sheet').classList.contains('hidden')) return;
+      const n=moves.length, p=turn; busy=true; updateUI();
+      setTimeout(()=>{
+        const [r,c]=GK.best(moves,p); busy=false;
+        if(moves.length===n&&turn===p&&!over){human(r,c); ensureVisible(r,c);} else updateUI();
+      },30);
+    }};
 
 })();
 
