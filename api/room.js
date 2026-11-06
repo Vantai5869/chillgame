@@ -18,7 +18,8 @@ function ensureTable() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
-    `.catch((e) => { ready = null; throw e; });
+    `.then(() => sql`ALTER TABLE game_rooms ADD COLUMN IF NOT EXISTS s0 TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS s1 TIMESTAMPTZ`)
+     .catch((e) => { ready = null; throw e; });
   }
   return ready;
 }
@@ -67,7 +68,29 @@ module.exports = async function handler(req, res) {
     await ensureTable();
 
     if (req.method === 'GET') {
+      // danh sách phòng có người đang ở trong (báo "còn đây" trong 60 giây gần nhất)
+      if (req.query.list) {
+        const game = String(req.query.list);
+        if (!GAMES.includes(game)) return res.status(400).json({ error: 'game' });
+        const rooms = await sql`
+          SELECT id, (p1 IS NULL) AS waiting, jsonb_array_length(moves)::int AS n,
+                 extract(epoch FROM now() - created_at)::int AS age
+          FROM game_rooms
+          WHERE game = ${game}
+            AND (s0 > now() - interval '60 seconds' OR s1 > now() - interval '60 seconds')
+          ORDER BY (p1 IS NULL) DESC, created_at DESC
+          LIMIT 30`;
+        return res.status(200).json({ rooms });
+      }
       const id = cleanId(req.query.id);
+      const tok = req.headers['x-room-token'];
+      if (typeof tok === 'string' && tok) {
+        await sql`
+          UPDATE game_rooms
+          SET s0 = CASE WHEN p0 = ${tok} THEN now() ELSE s0 END,
+              s1 = CASE WHEN p1 = ${tok} THEN now() ELSE s1 END
+          WHERE id = ${id} AND (p0 = ${tok} OR p1 = ${tok})`;
+      }
       const [row] = await sql`SELECT * FROM game_rooms WHERE id = ${id}`;
       if (!row) return res.status(404).json({ error: 'notfound' });
       return res.status(200).json(view(row, -1));
@@ -86,10 +109,26 @@ module.exports = async function handler(req, res) {
       // dọn phòng bỏ hoang
       if (Math.random() < 0.1) await sql`DELETE FROM game_rooms WHERE updated_at < now() - interval '7 days'`;
       const token = newToken();
+      const custom = body.id != null && body.id !== '';
+      if (custom) {
+        const id = cleanId(body.id);
+        if (!/^[A-Z0-9]{4,8}$/.test(id)) return res.status(400).json({ error: 'badid' });
+        // mã đã có: chỉ cho lấy lại nếu phòng cũ bỏ hoang hơn 1 ngày
+        const rows = await sql`
+          INSERT INTO game_rooms (id, game, p0, s0) VALUES (${id}, ${body.game}, ${token}, now())
+          ON CONFLICT (id) DO UPDATE
+            SET game = EXCLUDED.game, p0 = EXCLUDED.p0, p1 = NULL, moves = '[]'::jsonb, ver = game_rooms.ver + 1,
+                s0 = now(), s1 = NULL, created_at = now(), updated_at = now()
+            WHERE game_rooms.updated_at < now() - interval '1 day'
+              AND coalesce(greatest(game_rooms.s0, game_rooms.s1), 'epoch'::timestamptz) < now() - interval '1 day'
+          RETURNING *`;
+        if (!rows.length) return res.status(409).json({ error: 'taken' });
+        return res.status(200).json({ ...view(rows[0], 0), token });
+      }
       for (let i = 0; i < 5; i++) {
         const id = newId();
         const rows = await sql`
-          INSERT INTO game_rooms (id, game, p0) VALUES (${id}, ${body.game}, ${token})
+          INSERT INTO game_rooms (id, game, p0, s0) VALUES (${id}, ${body.game}, ${token}, now())
           ON CONFLICT (id) DO NOTHING RETURNING *`;
         if (rows.length) return res.status(200).json({ ...view(rows[0], 0), token });
       }
@@ -103,11 +142,13 @@ module.exports = async function handler(req, res) {
 
     if (action === 'join') {
       const side = sideOf(row, token);
+      if (side === 0) await sql`UPDATE game_rooms SET s0 = now() WHERE id = ${id}`;
+      if (side === 1) await sql`UPDATE game_rooms SET s1 = now() WHERE id = ${id}`;
       if (side >= 0) return res.status(200).json({ ...view(row, side), token });
       if (!row.p1) {
         const t = newToken();
         const rows = await sql`
-          UPDATE game_rooms SET p1 = ${t}, ver = ver + 1, updated_at = now()
+          UPDATE game_rooms SET p1 = ${t}, s1 = now(), ver = ver + 1, updated_at = now()
           WHERE id = ${id} AND p1 IS NULL RETURNING *`;
         if (rows.length) return res.status(200).json({ ...view(rows[0], 1), token: t });
       }

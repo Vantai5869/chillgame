@@ -236,6 +236,22 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
 .jrow input{flex:1; min-width:0; height:46px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink); padding:0 14px; font:inherit; font-size:1.05rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase}
 .jrow input::placeholder{letter-spacing:normal; text-transform:none; font-weight:400; color:var(--muted)}
 .jrow .b{height:46px; flex:none}
+.lobby{margin:0 0 8px}
+.lb-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+.lb-t{font-weight:700; font-size:.95rem}
+.lb-head .icon{width:32px; height:32px; font-size:1rem}
+.lb-list{list-style:none; margin:0 0 12px; padding:0; display:grid; gap:6px; max-height:min(44vh,330px); overflow-y:auto}
+.lb-empty{background:var(--surface); border:1px dashed var(--line); border-radius:12px; padding:14px; text-align:center; color:var(--muted); font-size:.88rem}
+.lb-row{width:100%; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:8px 8px 8px 14px; cursor:pointer}
+.lb-row:hover{border-color:var(--ink)}
+.lb-row b{font-size:1.05rem; letter-spacing:.1em}
+.lb-row .lb-s{color:var(--muted); font-size:.8rem; line-height:1.25; min-width:0}
+.lb-row .lb-s em{font-style:normal; font-weight:700; color:var(--ink)}
+.lb-row .lb-a{height:32px; display:grid; place-items:center; padding:0 14px; border-radius:9px; background:var(--accent); color:var(--btn-ink); font-weight:700; font-size:.82rem}
+.lb-row.watch .lb-a{background:transparent; color:var(--ink); border:1px solid var(--line)}
+.lb-l{display:block; font-weight:700; font-size:.88rem; margin:12px 0 6px}
+.lb-make{margin-top:10px}
+.lb-make .icon{width:46px; height:46px; border-radius:12px; font-size:1.2rem}
 .hjoin{margin-top:18px; background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:14px 14px 8px}
 .hjoin h2{margin:0 0 2px; font-size:1.05rem}
 .hjoin p.sub{margin:0 0 10px; color:var(--muted); font-size:.88rem}
@@ -312,7 +328,7 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
           <label><input type="radio" name="mode" value="ai"><span>Chơi với máy</span></label>
           <label><input type="radio" name="mode" value="pvp"><span>2 người</span></label>
           <label><input type="radio" name="mode" value="online"><span>Online</span></label></div></fieldset>
-        <fieldset id="joinSet" class="hidden"><legend>Vào phòng có sẵn</legend><div class="jrow"><input id="code" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Nhập mã phòng" aria-label="Mã phòng"><button class="b" id="join" type="button">Vào</button></div></fieldset>
+        <div class="lobby hidden" id="lobby"></div>
         <fieldset id="levelSet"><legend>Độ khó</legend><div class="seg">
           <label><input type="radio" name="level" value="1"><span>Dễ</span></label>
           <label><input type="radio" name="level" value="2"><span>Vừa</span></label>
@@ -355,7 +371,7 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
           <label><input type="radio" name="ch-mode" value="ai"><span>Chơi với máy</span></label>
           <label><input type="radio" name="ch-mode" value="pvp"><span>2 người</span></label>
           <label><input type="radio" name="ch-mode" value="online"><span>Online</span></label></div></fieldset>
-        <fieldset id="ch-joinSet" class="hidden"><legend>Vào phòng có sẵn</legend><div class="jrow"><input id="ch-code" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Nhập mã phòng" aria-label="Mã phòng"><button class="b" id="ch-join" type="button">Vào</button></div></fieldset>
+        <div class="lobby hidden" id="ch-lobby"></div>
         <fieldset id="ch-levelSet"><legend>Độ khó</legend><div class="seg">
           <label><input type="radio" name="ch-level" value="1"><span>Dễ</span></label>
           <label><input type="radio" name="ch-level" value="2"><span>Vừa</span></label>
@@ -395,7 +411,7 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
           <label><input type="radio" name="xq-mode" value="ai"><span>Chơi với máy</span></label>
           <label><input type="radio" name="xq-mode" value="pvp"><span>2 người</span></label>
           <label><input type="radio" name="xq-mode" value="online"><span>Online</span></label></div></fieldset>
-        <fieldset id="xq-joinSet" class="hidden"><legend>Vào phòng có sẵn</legend><div class="jrow"><input id="xq-code" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Nhập mã phòng" aria-label="Mã phòng"><button class="b" id="xq-join" type="button">Vào</button></div></fieldset>
+        <div class="lobby hidden" id="xq-lobby"></div>
         <fieldset id="xq-levelSet"><legend>Độ khó</legend><div class="seg">
           <label><input type="radio" name="xq-level" value="1"><span>Dễ</span></label>
           <label><input type="radio" name="xq-level" value="2"><span>Vừa</span></label>
@@ -437,14 +453,16 @@ const Net=(function(){
     let d={}; try{d=await r.json();}catch(e){}
     return {ok:r.ok,status:r.status,d};
   }
-  async function create(game){
-    const {ok,d}=await post({action:'create',game});
-    if(!ok||!d.id) throw new Error('create');
+  async function create(game,id){
+    const {ok,d}=await post({action:'create',game,id});
+    if(!ok||!d.id) throw new Error(d.error||'create');
     setTok(d.id,d.token); return d.id;
   }
+  const CH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const randomId=()=>Array.from({length:5},()=>CH[Math.floor(Math.random()*CH.length)]).join('');
   /* một phiên chơi: vào phòng, hỏi lại server mỗi giây, gửi nước đi */
   function session(game,id,onState,onStatus){
-    let ver=-1, side=-1, token=getTok(id), alive=true, timer=null, epoch=0, last=null;
+    let ver=-1, side=-1, token=getTok(id), alive=true, timer=null, epoch=0, last=null, lastBeat=Date.now();
     const apply=(st,force)=>{ if(!st||(!force&&st.ver<=ver)) return; ver=st.ver; last=st; onState(st,side); };
     async function join(){
       try{
@@ -462,7 +480,9 @@ const Net=(function(){
       if(document.hidden){schedule(1500); return;}
       const e0=epoch;
       try{
-        const r=await fetch('/api/room?id='+encodeURIComponent(id),{cache:'no-store'});
+        const beat=token&&side>=0&&Date.now()-lastBeat>15000;
+        if(beat) lastBeat=Date.now();
+        const r=await fetch('/api/room?id='+encodeURIComponent(id),{cache:'no-store',headers:beat?{'x-room-token':token}:{}});
         if(r.status===404){onStatus('notfound'); return;}
         const d=await r.json();
         onStatus('ok');
@@ -538,7 +558,58 @@ const Net=(function(){
     btn.onclick=go;
     inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); go();}});
   }
-  return {create,session,bar,roomLink,codeBox};
+  /* sảnh: danh sách phòng đang mở + tạo phòng (mã ngẫu nhiên, sửa được) + nhập mã */
+  const ago=sec=>sec<60?'vừa tạo':sec<3600?Math.floor(sec/60)+' phút trước':Math.floor(sec/3600)+' giờ trước';
+  function lobby(game,pre,sheetId){
+    const host=document.getElementById(pre+'lobby');
+    const segLabel=document.querySelector('#'+sheetId+' input[value=online] + span');
+    host.innerHTML=`
+      <div class="lb-head"><span class="lb-t">Phòng đang mở</span><button class="icon lb-rf" type="button" aria-label="Tải lại danh sách phòng">↻</button></div>
+      <ul class="lb-list"><li class="lb-empty">Đang tải…</li></ul>
+      <button class="b start lb-new" type="button">+ Tạo phòng mới</button>
+      <div class="lb-make hidden">
+        <label class="lb-l" for="${pre}newcode">Mã phòng mới (sửa được)</label>
+        <div class="jrow"><input id="${pre}newcode" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Mã phòng mới"><button class="icon lb-dice" type="button" aria-label="Đổi mã ngẫu nhiên">🎲</button><button class="b lb-go" type="button">Tạo</button></div>
+      </div>
+      <label class="lb-l" for="${pre}code">Có mã phòng riêng?</label>
+      <div class="jrow"><input id="${pre}code" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Nhập mã phòng" aria-label="Mã phòng"><button class="b alt" id="${pre}join" type="button">Vào</button></div>
+      <p class="oerr" id="${pre}lerr"></p>`;
+    const $h=sel=>host.querySelector(sel), list=$h('.lb-list'), err=$h('.oerr'), make=$h('.lb-make'), inp=$h('#'+pre+'newcode'), go=$h('.lb-go');
+    codeBox(pre,pre+'lerr');
+    let busy=false;
+    async function refresh(){
+      if(busy) return; busy=true;
+      try{
+        const r=await fetch('/api/room?list='+game,{cache:'no-store'});
+        const {rooms=[]}=await r.json();
+        segLabel.textContent=rooms.length?'Online · '+rooms.length:'Online';
+        list.innerHTML=rooms.length?rooms.map(x=>{
+          const mine=!!getTok(x.id);
+          const st=mine?'<em>Phòng của bạn</em>':x.waiting?'<em>Đang chờ người vào</em>':'Đang chơi · nước '+x.n;
+          return `<li><button class="lb-row${x.waiting||mine?'':' watch'}" type="button" data-id="${x.id}"><b>${x.id}</b><span class="lb-s">${st}<br>${ago(x.age)}</span><span class="lb-a">${mine?'Vào lại':x.waiting?'Vào':'Xem'}</span></button></li>`;
+        }).join(''):'<li class="lb-empty">Chưa có phòng nào đang mở.<br>Tạo phòng mới rồi rủ bạn vào nhé!</li>';
+      }catch(e){ list.innerHTML='<li class="lb-empty">Không tải được danh sách phòng.</li>'; }
+      busy=false;
+    }
+    list.addEventListener('click',e=>{const b=e.target.closest('.lb-row'); if(b) location.hash=roomLink(ROUTE[game],b.dataset.id);});
+    $h('.lb-rf').onclick=refresh;
+    $h('.lb-new').onclick=()=>{make.classList.remove('hidden'); inp.value=randomId(); err.textContent=''; inp.focus(); inp.select();};
+    $h('.lb-dice').onclick=()=>{inp.value=randomId(); inp.focus();};
+    async function create(){
+      const id=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+      err.textContent='';
+      if(!/^[A-Z0-9]{4,8}$/.test(id)){err.textContent='Mã phòng gồm 4–8 chữ cái hoặc số.'; return;}
+      go.disabled=true; go.textContent='…';
+      try{ const rid=await Net.create(game,id); make.classList.add('hidden'); location.hash=roomLink(ROUTE[game],rid); }
+      catch(e){ err.textContent=e.message==='taken'?'Mã '+id+' đã có người dùng, chọn mã khác nhé.':'Không tạo được phòng, thử lại nhé.'; }
+      go.disabled=false; go.textContent='Tạo';
+    }
+    go.onclick=create;
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); create();}});
+    setInterval(()=>{ if(!document.hidden&&host.offsetParent) refresh(); },4000);
+    return {refresh, reset(){make.classList.add('hidden'); err.textContent='';}};
+  }
+  return {create,session,bar,roomLink,codeBox,lobby};
 })();
 
 /* ===================== CARO ===================== */
@@ -903,13 +974,14 @@ const Net=(function(){
   function syncSetup(){
     const mode=val('mode');
     $('levelSet').classList.toggle('hidden',mode!=='ai');
-    $('joinSet').classList.toggle('hidden',mode!=='online');
-    $('start').textContent=mode==='online'?'Tạo phòng mới':'Bắt đầu chơi';
+    $('lobby').classList.toggle('hidden',mode!=='online');
+    $('start').classList.toggle('hidden',mode==='online');
+    if(mode==='online') lob.refresh();
 
   }
   document.querySelectorAll('#sheet input[type=radio]').forEach(i=>i.addEventListener('input',syncSetup));
-  Net.codeBox('','oerr');
-  function openSheet(){fillSetup(); $('sheetClose').classList.toggle('hidden',!bounds); $('sheet').classList.remove('hidden');}
+  const lob=Net.lobby('caro','','sheet');
+  function openSheet(){lob.reset(); lob.refresh(); fillSetup(); $('sheetClose').classList.toggle('hidden',!bounds); $('sheet').classList.remove('hidden');}
   function closeSheet(){$('sheet').classList.add('hidden'); cv.focus({preventScroll:true});}
   $('settings').onclick=()=>{if(!busy) openSheet();};
   $('sheetClose').onclick=closeSheet;
@@ -978,14 +1050,14 @@ const Net=(function(){
     net.stop(); net=null; netStatus='';
     score=offScore||{X:0,O:0}; offScore=null;
     restoreOffline(loadSaved());
-    if(!bounds){openSheet(); $('sheetClose').classList.add('hidden');}
+    openSheet();
   }
   window.Caro={
     enter(room){
       readColors(); requestDraw();
       if(room){ if(!net||net.id!==room) startOnline(room); return; }
       if(net){ leaveOnline(); return; }
-      if(!bounds){openSheet(); $('sheetClose').classList.add('hidden');}
+      openSheet();
     },
     playing:()=>!net&&moves.length>0&&!over,
     auto(){if(over||busy||isAI(turn)||!bounds||!myTurn()||(net&&net.side<0)||!$('sheet').classList.contains('hidden')) return; const [r,c]=aiMove(turn,3); human(r,c); ensureVisible(r,c);}};
@@ -1175,15 +1247,16 @@ function BoardGame(o){
   function sync(){
     const m=val('mode');
     q('levelSet').classList.toggle('hidden',m!=='ai');
-    q('joinSet').classList.toggle('hidden',m!=='online');
-    q('start').textContent=m==='online'?'Tạo phòng mới':'Bắt đầu chơi';
+    q('lobby').classList.toggle('hidden',m!=='online');
+    q('start').classList.toggle('hidden',m==='online');
+    if(m==='online') lob.refresh();
   }
-  Net.codeBox(o.id+'-',o.id+'-oerr');
+  const lob=Net.lobby(o.game,o.id+'-',o.id+'-sheet');
   radios('mode').forEach(r=>r.addEventListener('change',sync));
   function openSheet(first){
     radios('mode').forEach(r=>r.checked=r.value===(net?'online':mode));
     radios('level').forEach(r=>r.checked=+r.value===level);
-    q('oerr').textContent='';
+    q('oerr').textContent=''; lob.reset(); lob.refresh();
     sync(); q('close').classList.toggle('hidden',!!first); q('sheet').classList.remove('hidden');
   }
   q('close').onclick=()=>q('sheet').classList.add('hidden');
@@ -1235,7 +1308,7 @@ function BoardGame(o){
     if(q('promo')) q('promo').classList.add('hidden');
     hideWin();
     const had=load(); compute(); render();
-    if(!had) openSheet(true); else if(!res&&isAI(st.turn)) aiTurn();
+    if(!had) openSheet(true); else {openSheet(false); if(!res&&isAI(st.turn)) aiTurn();}
   }
   return {
     auto,
@@ -1243,9 +1316,9 @@ function BoardGame(o){
       if(room){ if(!net||net.id!==room) startOnline(room); else render(); return; }
       if(net){ leaveOnline(); return; }
       if(!started){
-        if(load()){started=true; compute(); render(); if(!res&&isAI(st.turn)) aiTurn();}
+        if(load()){started=true; compute(); render(); openSheet(false); if(!res&&isAI(st.turn)) aiTurn();}
         else {compute(); render(); openSheet(true);}
-      } else render();
+      } else {render(); openSheet(false);}
     },
     playing(){
       if(net) return false;
