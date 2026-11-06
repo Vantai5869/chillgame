@@ -1,5 +1,8 @@
 {
   "rewrites": [
     { "source": "/admin", "destination": "/api/admin" }
-  ]
+  ],
+  "functions": {
+    "api/room.js": { "maxDuration": 30 }
+  }
 }

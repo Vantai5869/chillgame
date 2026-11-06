@@ -475,6 +475,8 @@ const Net=(function(){
       }catch(e){ onStatus('offline'); if(alive) timer=setTimeout(join,2000); }
     }
     function schedule(ms){ clearTimeout(timer); if(alive) timer=setTimeout(poll,ms); }
+    /* long polling: server giữ request tới khi có nước mới (tối đa ~20 giây) rồi trả về ngay */
+    let ctrl=null, fails=0;
     async function poll(){
       if(!alive) return;
       if(document.hidden){schedule(1500); return;}
@@ -482,21 +484,30 @@ const Net=(function(){
       try{
         const beat=token&&side>=0&&Date.now()-lastBeat>15000;
         if(beat) lastBeat=Date.now();
-        const r=await fetch('/api/room?id='+encodeURIComponent(id),{cache:'no-store',headers:beat?{'x-room-token':token}:{}});
+        ctrl=new AbortController();
+        const kill=setTimeout(()=>ctrl.abort(),28000);
+        const r=await fetch('/api/room?id='+encodeURIComponent(id)+'&since='+ver+'&wait=1',{cache:'no-store',signal:ctrl.signal,headers:beat?{'x-room-token':token}:{}});
+        clearTimeout(kill);
         if(r.status===404){onStatus('notfound'); return;}
+        if(!r.ok) throw 0;
         const d=await r.json();
-        onStatus('ok');
+        fails=0; onStatus('ok');
         if(alive&&e0===epoch) apply(d);
-      }catch(e){ onStatus('offline'); }
-      const myTurn=last&&side>=0&&last.moves.length%2===side;
-      schedule(myTurn?2500:1000);
+        schedule(20);
+      }catch(e){
+        if(!alive) return;
+        if(e&&e.name==='AbortError'&&!document.hidden){schedule(0); return;}
+        fails++; if(fails>1) onStatus('offline');
+        schedule(Math.min(4000,400*fails));
+      }
     }
+    document.addEventListener('visibilitychange',()=>{ if(alive&&!document.hidden&&ctrl) ctrl.abort(); });
     async function send(move,n){
       epoch++;
       try{
         const {ok,d}=await post({action:'move',id,token,move,n});
         epoch++;
-        if(ok){ver=d.ver; last=d; schedule(900);}
+        if(ok){ver=d.ver; last=d;}
         else if(d.state) apply(d.state,true);
       }catch(e){ epoch++; onStatus('offline'); schedule(500); }
     }
@@ -505,7 +516,7 @@ const Net=(function(){
       try{const {ok,d}=await post({action:'reset',id,token}); epoch++; if(ok) apply(d,true);}catch(e){epoch++; onStatus('offline');}
     }
     join();
-    return {id, get side(){return side;}, get state(){return last;}, send, reset, stop(){alive=false; clearTimeout(timer);}};
+    return {id, get side(){return side;}, get state(){return last;}, send, reset, stop(){alive=false; clearTimeout(timer); if(ctrl) ctrl.abort();}};
   }
   /* thanh trạng thái phòng phía trên bàn cờ */
   function bar(viewId,onLeave){

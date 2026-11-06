@@ -91,8 +91,22 @@ module.exports = async function handler(req, res) {
               s1 = CASE WHEN p1 = ${tok} THEN now() ELSE s1 END
           WHERE id = ${id} AND (p0 = ${tok} OR p1 = ${tok})`;
       }
-      const [row] = await sql`SELECT * FROM game_rooms WHERE id = ${id}`;
+      let [row] = await sql`SELECT * FROM game_rooms WHERE id = ${id}`;
       if (!row) return res.status(404).json({ error: 'notfound' });
+      // long polling: giữ request tới khi có thay đổi (ver khác since) hoặc hết ~20 giây
+      const since = Number(req.query.since);
+      if (req.query.wait === '1' && Number.isInteger(since) && row.ver === since) {
+        let closed = false;
+        res.on('close', () => { closed = true; });
+        const t0 = Date.now();
+        while (!closed && Date.now() - t0 < 20000) {
+          await new Promise((r) => setTimeout(r, 120));
+          const [v] = await sql`SELECT ver FROM game_rooms WHERE id = ${id}`;
+          if (!v) return res.status(404).json({ error: 'notfound' });
+          if (v.ver !== since) { [row] = await sql`SELECT * FROM game_rooms WHERE id = ${id}`; break; }
+        }
+        if (closed) return res.end();
+      }
       return res.status(200).json(view(row, -1));
     }
 
