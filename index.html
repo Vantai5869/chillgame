@@ -223,7 +223,12 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
 .chip .disc{width:1.75rem; height:1.75rem; font-size:.95rem; flex:none; box-shadow:inset 0 -1px 2px rgba(120,70,25,.3),0 1.5px 0 #A9763D,0 2.5px 0 #7C5025,0 3px 5px rgba(0,0,0,.25)}
 .chip .disc::after{display:none}
 
-/* ---------- online ---------- */
+/* ---------- con trỏ gợi ý (phím Space) ---------- */
+.fcur{position:fixed; left:0; top:0; width:22px; height:32px; z-index:9999; pointer-events:none; display:none; will-change:transform}
+.fcur svg{display:block; width:100%; height:100%; filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.35))}
+body.aiming .fcur{display:block}
+body.aiming, body.aiming *{cursor:none !important}
+/* ---------- online (css) ---------- */
 .obar{display:flex; align-items:center; gap:8px; margin:0 8px 6px; padding:5px 6px 5px 12px; background:var(--surface); border:1px solid var(--line); border-radius:12px; font-size:.82rem; min-height:44px}
 .obar .ot{flex:1; min-width:0; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .obar .ot b{color:var(--ink); letter-spacing:.06em}
@@ -1271,13 +1276,20 @@ const GK=(function(){
       openSheet();
     },
     playing:()=>!net&&moves.length>0&&!over,
-    auto(){
-      if(over||busy||isAI(turn)||!bounds||!myTurn()||(net&&net.side<0)||!$('sheet').classList.contains('hidden')) return;
-      const n=moves.length, p=turn; busy=true; updateUI();
-      setTimeout(()=>{
-        const [r,c]=GK.best(moves,p); busy=false;
-        if(moves.length===n&&turn===p&&!over){human(r,c); ensureVisible(r,c);} else updateUI();
-      },30);
+    /* tìm nước tốt nhất, trả về vị trí trên màn hình + hành động khi bấm */
+    suggest(){
+      return new Promise(done=>{
+        if(over||busy||isAI(turn)||!bounds||!myTurn()||(net&&net.side<0)||!$('sheet').classList.contains('hidden')) return done(null);
+        const n=moves.length, p=turn; busy=true; updateUI();
+        setTimeout(()=>{
+          const [r,c]=GK.best(moves,p); busy=false; updateUI();
+          if(moves.length!==n||turn!==p||over) return done(null);
+          ensureVisible(r,c);
+          const pt=()=>{const rc=cv.getBoundingClientRect(); return [rc.left+c*s+tx+s/2, rc.top+r*s+ty+s/2];};
+          const act=()=>{ if(moves.length===n&&turn===p&&!over) human(r,c); return null; };
+          setTimeout(()=>done({pt,act}),panAnim?320:0);
+        },30);
+      });
     }};
 
 })();
@@ -1491,10 +1503,24 @@ function BoardGame(o){
     if(nm!==mode) score=[0,0];
     mode=nm; level=+val('level'); q('sheet').classList.add('hidden'); Snd.beep(660,0.08); newGame();
   };
-  function auto(){
-    if(!started||busy||res||isAI(st.turn)||promoCands||!myTurn()||(net&&net.side<0)||!q('sheet').classList.contains('hidden')) return;
-    busy=true; sel=-1; render();
-    setTimeout(()=>{const m=think(3,2500); busy=false; if(m&&ms.includes(m)&&myTurn()) move(m); else render();},30);
+  /* tìm nước tốt nhất: bước 1 trỏ vào quân, bấm xong thì bước 2 trỏ vào ô đích */
+  function suggest(){
+    return new Promise(done=>{
+      if(!started||busy||res||isAI(st.turn)||promoCands||!myTurn()||(net&&net.side<0)||!q('sheet').classList.contains('hidden')) return done(null);
+      busy=true; render();
+      setTimeout(()=>{
+        const m=think(3,2500); busy=false; render();
+        if(!m||!ms.includes(m)||!myTurn()) return done(null);
+        const n=mlist.length, cell=i=>q('board').querySelectorAll('button')[i];
+        const pt=i=>()=>{const rc=cell(i).getBoundingClientRect(); return [rc.left+rc.width/2, rc.top+rc.height/2];};
+        const still=()=>mlist.length===n&&!res&&!busy&&ms.includes(m);
+        done({pt:pt(m.f), act(){
+          if(!still()) return null;
+          sel=-1; tap(m.f);
+          return {pt:pt(m.t), act(){ if(!still()) return null; if(m.promo){sel=-1; move(m);} else tap(m.t); return null; }};
+        }});
+      },30);
+    });
   }
   /* --- online --- */
   const same=(a,b)=>a.f===b.f&&a.t===b.t&&(a.promo||'')===(b.promo||'');
@@ -1529,7 +1555,7 @@ function BoardGame(o){
     if(!had) openSheet(true); else {openSheet(false); if(!res&&isAI(st.turn)) aiTurn();}
   }
   return {
-    auto,
+    suggest,
     enter(room){
       if(room){ if(!net||net.id!==room) startOnline(room); else render(); return; }
       if(net){ leaveOnline(); return; }
@@ -1890,17 +1916,42 @@ const Xq=BoardGame({
   Net.codeBox('home-','home-oerr');
   addEventListener('hashchange',route);
   route();
-  /* giữ phím Space: tự đi nước tốt nhất cho bên đang tới lượt */
-  let holdTimer=null;
-  const autoStep=()=>{const v=document.body.dataset.view; if(v==='caro') window.Caro.auto(); else if(v==='chess') Chess.auto(); else if(v==='xq') Xq.auto();};
-  const stopHold=()=>{clearInterval(holdTimer); holdTimer=null;};
+  /* phím Space: đưa "con trỏ" tới nước tốt nhất, người chơi tự bấm chuột để đi.
+     Trình duyệt không cho di chuyển chuột thật, nên ẩn chuột thật và vẽ một con trỏ giống hệt
+     ở vị trí đó. Bấm chuột (không di) = bấm vào vị trí đó. Di chuột đi chỗ khác = trả lại chuột thật. */
+  const cur=document.createElement('div'); cur.className='fcur'; cur.setAttribute('aria-hidden','true');
+  cur.innerHTML='<svg viewBox="0 0 22 32"><path d="M1.5 1.5v24.2l5.6-5.4 3.7 8.6 3.9-1.7-3.6-8.4h7.8z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  document.body.appendChild(cur);
+  let mx=-1, my=-1, aim=null, thinking=false, eat=0;
+  const place=()=>{ if(!aim) return; const [x,y]=aim.pt(); cur.style.transform=`translate(${x-1.5}px,${y-1.5}px)`; };
+  function startAim(t){ if(!t){endAim(); return;} aim={...t, ox:mx, oy:my}; place(); document.body.classList.add('aiming'); }
+  function endAim(){ aim=null; document.body.classList.remove('aiming'); }
+  const suggestNow=()=>{const v=document.body.dataset.view; return v==='caro'?window.Caro.suggest():v==='chess'?Chess.suggest():v==='xq'?Xq.suggest():Promise.resolve(null);};
+  addEventListener('mousemove',e=>{
+    if(aim&&aim.ox>=0&&Math.hypot(e.clientX-aim.ox,e.clientY-aim.oy)>10) endAim();
+    mx=e.clientX; my=e.clientY;
+    if(aim&&aim.ox<0){aim.ox=mx; aim.oy=my;}
+  },true);
+  // nuốt các sự kiện chuột đi kèm cú bấm đó để nó không rơi xuống chỗ chuột thật đang đứng
+  const swallow=e=>{ if(Date.now()<eat&&e.pointerType!=='touch'){ e.preventDefault(); e.stopPropagation(); } };
+  addEventListener('pointerdown',e=>{
+    if(!aim||e.pointerType==='touch'||e.button!==0) return;
+    e.preventDefault(); e.stopPropagation(); eat=Date.now()+700;
+    const next=aim.act(); if(next){aim={...next, ox:mx, oy:my}; place();} else endAim();
+  },true);
+  ['pointerup','mousedown','mouseup','click'].forEach(t=>addEventListener(t,swallow,true));
+  addEventListener('wheel',endAim,{capture:true,passive:true});
+  addEventListener('resize',place);
+  addEventListener('hashchange',endAim);
   addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&aim){endAim(); return;}
     if(e.code!=='Space'||/^(TEXTAREA|SELECT)$/.test(e.target.tagName)||(e.target.tagName==='INPUT'&&e.target.type==='text')) return;
     e.preventDefault(); e.stopPropagation();
-    if(!holdTimer){autoStep(); holdTimer=setInterval(autoStep,200);}
+    if(e.repeat||thinking) return;
+    if(aim){endAim(); return;}
+    thinking=true; suggestNow().then(t=>{thinking=false; startAim(t);});
   },true);
-  addEventListener('keyup',e=>{if(e.code==='Space'){e.preventDefault(); stopHold();}},true);
-  addEventListener('blur',stopHold);
+  addEventListener('keyup',e=>{if(e.code==='Space') e.preventDefault();},true);
 })();
 </script>
 <script>fetch("/api/visits",{method:"POST",keepalive:true}).catch(function(){});</script>
