@@ -223,6 +223,15 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
 .chip .disc{width:1.75rem; height:1.75rem; font-size:.95rem; flex:none; box-shadow:inset 0 -1px 2px rgba(120,70,25,.3),0 1.5px 0 #A9763D,0 2.5px 0 #7C5025,0 3px 5px rgba(0,0,0,.25)}
 .chip .disc::after{display:none}
 
+/* ---------- online ---------- */
+.obar{display:flex; align-items:center; gap:8px; margin:0 8px 6px; padding:5px 6px 5px 12px; background:var(--surface); border:1px solid var(--line); border-radius:12px; font-size:.82rem; min-height:44px}
+.obar .ot{flex:1; min-width:0; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.obar .ot b{color:var(--ink); letter-spacing:.06em}
+.obar .b{height:32px; padding:0 12px; font-size:.82rem; border-radius:9px}
+.obar .icon{width:32px; height:32px; font-size:.9rem}
+.flip{rotate:180deg}
+.flip .pc,.flip .co,.flip .disc{rotate:180deg}
+.oerr{color:var(--chk,#C8323C); font-size:.85rem; margin:8px 0 0; min-height:1.2em}
 @media (min-width:640px){
   .top{padding-top:14px}
   .bottom{max-width:520px; width:100%; margin:0 auto}
@@ -237,7 +246,7 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
     <h1>Góc cờ</h1>
     <button class="icon snd" aria-label="Tắt âm thanh">🔊</button>
   </div>
-  <p class="lead">Chọn một bàn để bắt đầu. Chơi với máy, hoặc rủ người ngồi cạnh cùng chơi.</p>
+  <p class="lead">Chọn một bàn để bắt đầu. Chơi với máy, rủ người ngồi cạnh, hoặc gửi link để chơi online với bạn ở xa.</p>
   <nav class="tiles">
     <a class="tile" href="#caro">
       <div class="pv pv-caro" aria-hidden="true"><span style="left:22px;top:22px;color:#1F3FA8">X</span><span style="left:46px;top:44px;color:#C8323C">O</span><span style="left:68px;top:66px;color:#1F3FA8">X</span></div>
@@ -288,12 +297,13 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
       <form onsubmit="return false">
         <fieldset><legend>Chế độ</legend><div class="seg">
           <label><input type="radio" name="mode" value="ai"><span>Chơi với máy</span></label>
-          <label><input type="radio" name="mode" value="pvp"><span>2 người</span></label></div></fieldset>
+          <label><input type="radio" name="mode" value="pvp"><span>2 người</span></label>
+          <label><input type="radio" name="mode" value="online"><span>Online</span></label></div></fieldset>
         <fieldset id="levelSet"><legend>Độ khó</legend><div class="seg">
           <label><input type="radio" name="level" value="1"><span>Dễ</span></label>
           <label><input type="radio" name="level" value="2"><span>Vừa</span></label>
           <label><input type="radio" name="level" value="3"><span>Khó</span></label></div></fieldset>
-        <button class="b start" id="start" type="button">Bắt đầu chơi</button>
+        <button class="b start" id="start" type="button">Bắt đầu chơi</button><p class="oerr" id="oerr"></p>
       </form>
     </div>
   </section>
@@ -329,12 +339,13 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
       <form onsubmit="return false">
         <fieldset><legend>Chế độ</legend><div class="seg">
           <label><input type="radio" name="ch-mode" value="ai"><span>Chơi với máy</span></label>
-          <label><input type="radio" name="ch-mode" value="pvp"><span>2 người</span></label></div></fieldset>
+          <label><input type="radio" name="ch-mode" value="pvp"><span>2 người</span></label>
+          <label><input type="radio" name="ch-mode" value="online"><span>Online</span></label></div></fieldset>
         <fieldset id="ch-levelSet"><legend>Độ khó</legend><div class="seg">
           <label><input type="radio" name="ch-level" value="1"><span>Dễ</span></label>
           <label><input type="radio" name="ch-level" value="2"><span>Vừa</span></label>
           <label><input type="radio" name="ch-level" value="3"><span>Khó</span></label></div></fieldset>
-        <button class="b start" id="ch-start" type="button">Bắt đầu chơi</button>
+        <button class="b start" id="ch-start" type="button">Bắt đầu chơi</button><p class="oerr" id="ch-oerr"></p>
       </form>
     </div>
   </section>
@@ -367,12 +378,13 @@ legend{font-weight:700; padding:0; margin-bottom:8px; font-size:.95rem}
       <form onsubmit="return false">
         <fieldset><legend>Chế độ</legend><div class="seg">
           <label><input type="radio" name="xq-mode" value="ai"><span>Chơi với máy</span></label>
-          <label><input type="radio" name="xq-mode" value="pvp"><span>2 người</span></label></div></fieldset>
+          <label><input type="radio" name="xq-mode" value="pvp"><span>2 người</span></label>
+          <label><input type="radio" name="xq-mode" value="online"><span>Online</span></label></div></fieldset>
         <fieldset id="xq-levelSet"><legend>Độ khó</legend><div class="seg">
           <label><input type="radio" name="xq-level" value="1"><span>Dễ</span></label>
           <label><input type="radio" name="xq-level" value="2"><span>Vừa</span></label>
           <label><input type="radio" name="xq-level" value="3"><span>Khó</span></label></div></fieldset>
-        <button class="b start" id="xq-start" type="button">Bắt đầu chơi</button>
+        <button class="b start" id="xq-start" type="button">Bắt đầu chơi</button><p class="oerr" id="xq-oerr"></p>
       </form>
     </div>
   </section>
@@ -399,6 +411,99 @@ const Snd=(function(){
   return {beep, win(){[523,659,784,1046].forEach((f,k)=>setTimeout(()=>beep(f,0.16,'sine',0.17),k*110));}};
 })();
 
+/* ===================== CHƠI ONLINE ===================== */
+const Net=(function(){
+  const tk=id=>'goc-co-room-'+id;
+  const getTok=id=>{try{return localStorage.getItem(tk(id));}catch(e){return null;}};
+  const setTok=(id,t)=>{try{localStorage.setItem(tk(id),t);}catch(e){}};
+  async function post(body){
+    const r=await fetch('/api/room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    let d={}; try{d=await r.json();}catch(e){}
+    return {ok:r.ok,status:r.status,d};
+  }
+  async function create(game){
+    const {ok,d}=await post({action:'create',game});
+    if(!ok||!d.id) throw new Error('create');
+    setTok(d.id,d.token); return d.id;
+  }
+  /* một phiên chơi: vào phòng, hỏi lại server mỗi giây, gửi nước đi */
+  function session(game,id,onState,onStatus){
+    let ver=-1, side=-1, token=getTok(id), alive=true, timer=null, epoch=0, last=null;
+    const apply=(st,force)=>{ if(!st||(!force&&st.ver<=ver)) return; ver=st.ver; last=st; onState(st,side); };
+    async function join(){
+      try{
+        const {ok,status,d}=await post({action:'join',id,token});
+        if(status===404){onStatus('notfound'); return;}
+        if(!ok) throw 0;
+        if(d.game!==game){onStatus('wronggame',d.game); return;}
+        side=d.side; if(d.token){token=d.token; setTok(id,token);}
+        onStatus('ok'); apply(d); schedule(300);
+      }catch(e){ onStatus('offline'); if(alive) timer=setTimeout(join,2000); }
+    }
+    function schedule(ms){ clearTimeout(timer); if(alive) timer=setTimeout(poll,ms); }
+    async function poll(){
+      if(!alive) return;
+      if(document.hidden){schedule(1500); return;}
+      const e0=epoch;
+      try{
+        const r=await fetch('/api/room?id='+encodeURIComponent(id),{cache:'no-store'});
+        if(r.status===404){onStatus('notfound'); return;}
+        const d=await r.json();
+        onStatus('ok');
+        if(alive&&e0===epoch) apply(d);
+      }catch(e){ onStatus('offline'); }
+      const myTurn=last&&side>=0&&last.moves.length%2===side;
+      schedule(myTurn?2500:1000);
+    }
+    async function send(move,n){
+      epoch++;
+      try{
+        const {ok,d}=await post({action:'move',id,token,move,n});
+        epoch++;
+        if(ok){ver=d.ver; last=d; schedule(900);}
+        else if(d.state) apply(d.state,true);
+      }catch(e){ epoch++; onStatus('offline'); schedule(500); }
+    }
+    async function reset(){
+      epoch++;
+      try{const {ok,d}=await post({action:'reset',id,token}); epoch++; if(ok) apply(d,true);}catch(e){epoch++; onStatus('offline');}
+    }
+    join();
+    return {id, get side(){return side;}, get state(){return last;}, send, reset, stop(){alive=false; clearTimeout(timer);}};
+  }
+  /* thanh trạng thái phòng phía trên bàn cờ */
+  function bar(viewId,onLeave){
+    const v=document.getElementById(viewId), el=document.createElement('div');
+    el.className='obar hidden';
+    el.innerHTML='<span class="ot"></span><button class="b alt" type="button">Mời bạn</button><button class="icon" type="button" aria-label="Rời phòng online">✕</button>';
+    v.querySelector('.top').after(el);
+    const ot=el.querySelector('.ot'), inv=el.querySelector('.b');
+    inv.onclick=async()=>{
+      const url=location.href;
+      try{ if(navigator.share){await navigator.share({title:'Vào chơi cờ với mình nhé',url}); return;} }catch(e){ if(e&&e.name==='AbortError') return; }
+      try{await navigator.clipboard.writeText(url); inv.textContent='Đã copy link';}catch(e){prompt('Gửi link này cho bạn:',url);}
+      setTimeout(()=>inv.textContent='Mời bạn',1800);
+    };
+    el.querySelector('.icon').onclick=onLeave;
+    return {
+      show(on){el.classList.toggle('hidden',!on);},
+      set(html){ot.innerHTML=html;},
+      text(id,side,st,status){
+        const r=`Phòng <b>${id}</b>`;
+        if(status==='notfound') return r+' · không tồn tại hoặc đã hết hạn';
+        if(status==='wronggame') return r+' · là phòng của trò khác';
+        if(status==='offline') return r+' · mất kết nối, đang thử lại…';
+        if(!st) return r+' · đang vào phòng…';
+        if(side<0) return r+' · phòng đã đủ 2 người, bạn đang xem';
+        if(!(st.p0&&st.p1)) return r+' · đang chờ bạn kia vào — bấm “Mời bạn” để gửi link';
+        return r+' · đang chơi online';
+      }
+    };
+  }
+  const roomLink=(route,id)=>'#'+route+'?r='+id;
+  return {create,session,bar,roomLink};
+})();
+
 /* ===================== CARO ===================== */
 (function(){
   const $=id=>document.getElementById(id);
@@ -411,11 +516,15 @@ const Snd=(function(){
   let tx=0, ty=0, s=32, W=0, H=0, dpr=1, needFit=true, needFull=false, focused=false, cursor={r:0,c:0};
   const K=(r,c)=>r+','+c;
   const get=(r,c)=>stones.get(K(r,c))||'';
-  const name=p=>cfg.mode==='ai'?(p==='X'?'Bạn':'Máy'):(p==='X'?'Người 1':'Người 2');
-  const isAI=p=>cfg.mode==='ai'&&p==='O';
+  let net=null, netStatus='', offScore=null;
+  const mine=()=>net?(net.side===0?'X':net.side===1?'O':''):turn;
+  const name=p=>net?(net.side<0?'Quân '+p:(p===mine()?'Bạn':'Bạn kia')):(cfg.mode==='ai'?(p==='X'?'Bạn':'Máy'):(p==='X'?'Người 1':'Người 2'));
+  const isAI=p=>!net&&cfg.mode==='ai'&&p==='O';
+  const myTurn=()=>!net||turn===mine();
+  const bar=Net.bar('v-caro',()=>{location.hash='caro';});
 
   /* ---------- lưu trữ ---------- */
-  function persist(){try{localStorage.setItem('caro-oly',JSON.stringify({cfg,score,soundOn,hintSeen,moves,bounds}));}catch(e){}}
+  function persist(){if(net) return; try{localStorage.setItem('caro-oly',JSON.stringify({cfg,score,soundOn,hintSeen,moves,bounds}));}catch(e){}}
   function loadSaved(){try{return JSON.parse(localStorage.getItem('caro-oly')||'null');}catch(e){return null;}}
 
   /* ---------- màu ---------- */
@@ -618,23 +727,24 @@ const Snd=(function(){
     }
     return null;
   }
-  function play(r,c,p){
+  function play(r,c,p,quiet){
     const k=K(r,c);
     stones.set(k,p); moves.push([r,c,p]); grow(r,c);
-    anim={k,t0:performance.now()}; beep(p==='X'?520:390);
+    if(!quiet){anim={k,t0:performance.now()}; beep(p==='X'?520:390);}
     const w=winLine(r,c,p);
-    if(w){over=true; win=w; score[p]++; winSound(); showWin(p);}
+    if(w){over=true; win=w; score[p]++; if(!quiet) winSound(); showWin(p);}
     else turn=p==='X'?'O':'X';
     persist(); updateUI(); clampView(); requestDraw();
   }
   function human(r,c){
-    if(over||busy||isAI(turn)||get(r,c)||!inPlay(r,c)) return;
+    if(over||busy||isAI(turn)||get(r,c)||!inPlay(r,c)||!myTurn()) return;
+    if(net) net.send({r,c},moves.length);
     play(r,c,turn);
     if(!over&&isAI(turn)) aiTurn();
   }
   function aiTurn(){
     busy=true; updateUI();
-    setTimeout(()=>{const [r,c]=aiMove(); busy=false; play(r,c,'O'); ensureVisible(r,c);},moves.length?320:150);
+    setTimeout(()=>{busy=false; if(net){updateUI(); return;} const [r,c]=aiMove(); play(r,c,'O'); ensureVisible(r,c);},moves.length?320:150);
   }
 
   /* ---------- máy chơi ---------- */
@@ -706,24 +816,26 @@ const Snd=(function(){
     $('chipX').classList.toggle('active',!over&&turn==='X');
     $('chipO').classList.toggle('active',!over&&turn==='O');
     const wp=over&&win?moves[moves.length-1][2]:null;
+    const waiting=net&&net.state&&!(net.state.p0&&net.state.p1);
     $('tx').textContent=wp==='X'?'Thắng':(!over&&turn==='X'?'Đến lượt':'');
-    $('to').textContent=wp==='O'?'Thắng':(!over&&turn==='O'?(isAI('O')&&busy?'Đang nghĩ…':'Đến lượt'):'');
+    $('to').textContent=wp==='O'?'Thắng':(waiting?'Chưa vào':(!over&&turn==='O'?(isAI('O')&&busy?'Đang nghĩ…':'Đến lượt'):''));
+    bar.show(!!net); if(net) bar.set(bar.text(net.id,net.side,net.state,netStatus));
     const st=$('status');
     if(over&&win){const p=moves[moves.length-1][2]; st.textContent=isAI(p)?'Máy thắng ván này':name(p)+' thắng!'; st.style.color=p==='X'?'var(--x)':'var(--o)';}
-    else {st.textContent=isAI(turn)?'Máy đang nghĩ…':(cfg.mode==='ai'?'Lượt của bạn':'Lượt của '+name(turn)); st.style.color=turn==='X'?'var(--x)':'var(--o)';}
+    else {st.textContent=net?(myTurn()?'Lượt của bạn':'Chờ '+name(turn)+' đánh…'):isAI(turn)?'Máy đang nghĩ…':(cfg.mode==='ai'?'Lượt của bạn':'Lượt của '+name(turn)); st.style.color=turn==='X'?'var(--x)':'var(--o)';}
     $('count').textContent='Nước '+moves.length;
-    $('undo').disabled=busy||!moves.length||(cfg.mode==='ai'&&moves.length===1&&cfg.first==='O');
+    $('undo').disabled=busy||!moves.length||!!net||(cfg.mode==='ai'&&moves.length===1&&cfg.first==='O');
   }
   function showWin(p){
     $('wtitle').textContent=isAI(p)?'Máy thắng!':name(p)+' thắng! 🎉';
     $('wtitle').style.color=p==='X'?'var(--x)':'var(--o)';
-    $('wsub').textContent=isAI(p)?'Sau '+moves.length+' nước. Phục thù không?':'Sau '+moves.length+' nước đi. Đẹp lắm!';
+    $('wsub').textContent=net?'Sau '+moves.length+' nước. Bấm Ván mới để chơi tiếp.':isAI(p)?'Sau '+moves.length+' nước. Phục thù không?':'Sau '+moves.length+' nước đi. Đẹp lắm!';
     $('wincard').classList.add('show');
   }
   const hideWin=()=>$('wincard').classList.remove('show');
   $('wclose').onclick=hideWin;
-  $('wnew').onclick=()=>newGame();
-  $('again').onclick=()=>{if(!busy) newGame();};
+  $('wnew').onclick=()=>{if(net) net.reset(); else newGame();};
+  $('again').onclick=()=>{if(busy) return; if(net) net.reset(); else newGame();};
 
   function newGame(){
     stones.clear(); moves=[]; win=null; over=false; busy=false; anim=null;
@@ -733,7 +845,7 @@ const Snd=(function(){
     if(isAI(turn)) aiTurn();
   }
   $('undo').onclick=()=>{
-    if(busy||!moves.length) return;
+    if(busy||!moves.length||net) return;
     if(over){if(win){const p=moves[moves.length-1][2]; score[p]=Math.max(0,score[p]-1);} win=null; over=false; hideWin();}
     const undoOne=()=>{const m=moves.pop(); stones.delete(K(m[0],m[1])); turn=m[2];};
     if(cfg.mode==='ai'){
@@ -747,7 +859,7 @@ const Snd=(function(){
   const radios=n=>[...document.querySelectorAll(`input[name=${n}]`)];
   const val=n=>radios(n).find(r=>r.checked).value;
   function fillSetup(){
-    radios('mode').forEach(r=>r.checked=r.value===cfg.mode);
+    radios('mode').forEach(r=>r.checked=r.value===(net?'online':cfg.mode)); $('oerr').textContent='';
     radios('level').forEach(r=>r.checked=+r.value===cfg.level);
     syncSetup();
   }
@@ -761,7 +873,14 @@ const Snd=(function(){
   function closeSheet(){$('sheet').classList.add('hidden'); cv.focus({preventScroll:true});}
   $('settings').onclick=()=>{if(!busy) openSheet();};
   $('sheetClose').onclick=closeSheet;
-  $('start').onclick=()=>{
+  $('start').onclick=async()=>{
+    if(val('mode')==='online'){
+      const b=$('start'); b.disabled=true; b.textContent='Đang tạo phòng…'; $('oerr').textContent='';
+      try{const id=await Net.create('caro'); $('sheet').classList.add('hidden'); location.hash=Net.roomLink('caro',id);}
+      catch(e){$('oerr').textContent='Không tạo được phòng, thử lại nhé.';}
+      b.disabled=false; b.textContent='Bắt đầu chơi'; return;
+    }
+    if(net) leaveOnline();
     const n={mode:val('mode'),level:+val('level'),first:'X'};
     if(n.mode!==cfg.mode) score={X:0,O:0};
     cfg=n; beep(660,0.08); closeSheet(); newGame();
@@ -774,19 +893,62 @@ const Snd=(function(){
     soundOn=saved.soundOn!==false; hintSeen=!!saved.hintSeen;
   }
   if(hintSeen) $('hint').classList.add('gone');
-  if(saved&&saved.cfg){
-    if(saved.bounds) bounds=saved.bounds; else initBounds(15);
-    turn=cfg.first;
-    for(const [r,c,p] of (saved.moves||[])){stones.set(K(r,c),p); moves.push([r,c,p]); grow(r,c); turn=p==='X'?'O':'X';}
-    const lm=moves[moves.length-1];
-    if(lm){const w=winLine(lm[0],lm[1],lm[2]); if(w){win=w; over=true;}}
-    needFit=true; updateUI(); requestDraw();
-    if(!over&&isAI(turn)) aiTurn();
-  } else {
-    updateUI();
+  function restoreOffline(sv){
+    stones.clear(); moves=[]; win=null; over=false; busy=false; anim=null; bounds=null; turn='X';
+    if(sv&&sv.cfg){
+      if(sv.bounds) bounds=sv.bounds; else initBounds(15);
+      turn=cfg.first;
+      for(const [r,c,p] of (sv.moves||[])){stones.set(K(r,c),p); moves.push([r,c,p]); grow(r,c); turn=p==='X'?'O':'X';}
+      const lm=moves[moves.length-1];
+      if(lm){const w=winLine(lm[0],lm[1],lm[2]); if(w){win=w; over=true;}}
+      needFit=true; updateUI(); requestDraw();
+      if(!over&&isAI(turn)) aiTurn();
+    } else {
+      updateUI();
+    }
   }
-  window.Caro={enter(){readColors(); requestDraw(); if(!bounds){openSheet(); $('sheetClose').classList.add('hidden');}}, playing:()=>moves.length>0&&!over,
-    auto(){if(over||busy||isAI(turn)||!bounds||!$('sheet').classList.contains('hidden')) return; const [r,c]=aiMove(turn,3); human(r,c); ensureVisible(r,c);}};
+  restoreOffline(saved);
+
+  /* ---------- online ---------- */
+  function blankBoard(){if(W&&H) initFull(); else {initBounds(15); needFull=true;}}
+  function syncMoves(list){
+    const prefix=moves.length<=list.length&&moves.every((m,i)=>m[0]===list[i].r&&m[1]===list[i].c);
+    const fresh=!prefix;
+    if(fresh){stones.clear(); moves=[]; win=null; over=false; anim=null; turn='X'; hideWin(); blankBoard();}
+    for(let i=moves.length;i<list.length&&!over;i++){
+      const {r,c}=list[i]; if(get(r,c)) break;
+      play(r,c,turn,fresh||i<list.length-1);
+    }
+    const lm=moves[moves.length-1];
+    if(fresh&&lm){needFull=false; if(W&&H) fit(); else needFit=true;}
+    else if(lm) ensureVisible(lm[0],lm[1]);
+    updateUI(); requestDraw();
+  }
+  function startOnline(id){
+    if(net) net.stop();
+    if(!offScore) offScore=score;
+    score={X:0,O:0}; netStatus='';
+    stones.clear(); moves=[]; win=null; over=false; busy=false; anim=null; turn='X'; hideWin();
+    blankBoard(); $('sheet').classList.add('hidden');
+    net=Net.session('caro',id,st=>syncMoves(st.moves),stt=>{netStatus=stt; updateUI();});
+    updateUI(); requestDraw();
+  }
+  function leaveOnline(){
+    if(!net) return;
+    net.stop(); net=null; netStatus='';
+    score=offScore||{X:0,O:0}; offScore=null;
+    restoreOffline(loadSaved());
+    if(!bounds){openSheet(); $('sheetClose').classList.add('hidden');}
+  }
+  window.Caro={
+    enter(room){
+      readColors(); requestDraw();
+      if(room){ if(!net||net.id!==room) startOnline(room); return; }
+      if(net){ leaveOnline(); return; }
+      if(!bounds){openSheet(); $('sheetClose').classList.add('hidden');}
+    },
+    playing:()=>!net&&moves.length>0&&!over,
+    auto(){if(over||busy||isAI(turn)||!bounds||!myTurn()||(net&&net.side<0)||!$('sheet').classList.contains('hidden')) return; const [r,c]=aiMove(turn,3); human(r,c); ensureVisible(r,c);}};
 
 })();
 
@@ -794,9 +956,12 @@ const Snd=(function(){
 function BoardGame(o){
   const E=o.engine, q=s=>document.getElementById(o.id+'-'+s);
   let mode='ai', level=2, score=[0,0], st=E.initial(), hist=[], mlist=[], ms=[], res=null, sel=-1, busy=false, started=false, promoCands=null;
-  const name=s=>mode==='ai'?(s===0?'Bạn':'Máy'):(s===0?'Người 1':'Người 2');
-  const isAI=s=>mode==='ai'&&s===1;
-  function save(){try{localStorage.setItem(o.key,JSON.stringify({mode,level,score,moves:mlist}));}catch(e){}}
+  let net=null, netStatus='', offScore=null;
+  const name=s=>net?(net.side<0?o.sides[s]:(s===net.side?'Bạn':'Bạn kia')):(mode==='ai'?(s===0?'Bạn':'Máy'):(s===0?'Người 1':'Người 2'));
+  const isAI=s=>!net&&mode==='ai'&&s===1;
+  const myTurn=()=>!net||st.turn===net.side;
+  const bar=Net.bar(o.view,()=>{location.hash=o.route;});
+  function save(){if(net) return; try{localStorage.setItem(o.key,JSON.stringify({mode,level,score,moves:mlist}));}catch(e){}}
   function load(){
     let d=null; try{d=JSON.parse(localStorage.getItem(o.key)||'null');}catch(e){}
     if(!d) return false;
@@ -811,20 +976,23 @@ function BoardGame(o){
   function render(){
     const tg=new Map(); if(sel>=0) for(const m of ms) if(m.f===sel) tg.set(m.t,m);
     o.draw(q('board'),st,{sel,targets:tg,last:mlist[mlist.length-1],check:E.inCheck(st)?E.kingSq(st,st.turn):-1});
+    q('board').classList.toggle('flip',!!net&&net.side===1);
+    bar.show(!!net); if(net) bar.set(bar.text(net.id,net.side,net.state,netStatus));
+    const waiting=net&&net.state&&!(net.state.p0&&net.state.p1);
     for(const s of [0,1]){
       q('n'+s).textContent=name(s); q('s'+s).textContent=score[s];
       q('chip'+s).classList.toggle('active',!res&&st.turn===s);
-      q('t'+s).textContent=res?(res.winner===s?'Thắng':res.winner==null?'Hòa':''):(st.turn===s?(isAI(s)&&busy?'Đang nghĩ…':(E.inCheck(st)?'Bị chiếu!':'Đến lượt')):'');
+      q('t'+s).textContent=res?(res.winner===s?'Thắng':res.winner==null?'Hòa':''):(waiting&&s===1?'Chưa vào':(st.turn===s?(isAI(s)&&busy?'Đang nghĩ…':(E.inCheck(st)?'Bị chiếu!':'Đến lượt')):''));
     }
     const el=q('status');
     if(res) el.textContent=res.winner==null?'Hòa!':(isAI(res.winner)?'Máy thắng ván này':name(res.winner)+' thắng!');
-    else el.textContent=(E.inCheck(st)?'Chiếu! ':'')+(isAI(st.turn)?'Máy đang nghĩ…':(mode==='ai'?'Lượt của bạn':'Lượt của '+name(st.turn)));
+    else el.textContent=(E.inCheck(st)?'Chiếu! ':'')+(net?(st.turn===net.side?'Lượt của bạn':'Chờ '+name(st.turn)+' đi…'):isAI(st.turn)?'Máy đang nghĩ…':(mode==='ai'?'Lượt của bạn':'Lượt của '+name(st.turn)));
     el.style.color=o.color(res?res.winner:st.turn);
     q('count').textContent='Nước '+mlist.length;
-    q('undo').disabled=busy||!mlist.length;
+    q('undo').disabled=busy||!mlist.length||!!net;
   }
   function tap(sq){
-    if(busy||res||isAI(st.turn)||promoCands) return;
+    if(busy||res||isAI(st.turn)||promoCands||!myTurn()) return;
     if(sel>=0){
       const c=ms.filter(m=>m.f===sel&&m.t===sq);
       if(c.length){ if(c.length>1) askPromo(c); else move(c[0]); return; }
@@ -841,17 +1009,19 @@ function BoardGame(o){
   if(q('promo')) q('promo').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
     const m=promoCands&&promoCands.find(x=>x.promo===b.dataset.p); q('promo').classList.add('hidden'); promoCands=null; if(m) move(m);
   }));
-  function move(m){
+  function move(m,remote,quiet){
     const cap=E.isCap(st,m);
+    if(net&&!remote) net.send(m.promo?{f:m.f,t:m.t,promo:m.promo}:{f:m.f,t:m.t},mlist.length);
     hist.push(st); mlist.push(m); st=E.play(st,m); sel=-1; compute();
-    Snd.beep(cap?170:290,cap?0.09:0.06,'triangle',0.18);
-    if(res){ if(res.winner!=null) score[res.winner]++; setTimeout(()=>Snd.win(),120); showWin(); }
+    if(!quiet) Snd.beep(cap?170:290,cap?0.09:0.06,'triangle',0.18);
+    if(res){ if(res.winner!=null) score[res.winner]++; if(!quiet) setTimeout(()=>Snd.win(),120); showWin(); }
+    if(quiet) return;
     save(); render();
     if(!res&&isAI(st.turn)) aiTurn();
   }
   function aiTurn(){
     busy=true; render();
-    setTimeout(()=>{const m=think(); busy=false; if(m) move(m); else render();},280);
+    setTimeout(()=>{if(net){busy=false; render(); return;} const m=think(); busy=false; if(m) move(m); else render();},280);
   }
   /* --- máy tính nước đi: tìm sâu dần + tìm kiếm tĩnh + sắp xếp nước (killer, history) --- */
   const INF=1e9;
@@ -943,10 +1113,10 @@ function BoardGame(o){
   }
   const hideWin=()=>q('win').classList.remove('show');
   q('wclose').onclick=hideWin;
-  q('wnew').onclick=()=>newGame();
-  q('again').onclick=()=>{if(!busy) newGame();};
+  q('wnew').onclick=()=>{if(net) net.reset(); else newGame();};
+  q('again').onclick=()=>{if(busy) return; if(net) net.reset(); else newGame();};
   q('undo').onclick=()=>{
-    if(busy||!mlist.length) return;
+    if(busy||!mlist.length||net) return;
     if(res){ if(res.winner!=null) score[res.winner]=Math.max(0,score[res.winner]-1); hideWin(); }
     if(promoCands){promoCands=null; q('promo').classList.add('hidden');}
     const pop=()=>{st=hist.pop(); mlist.pop();};
@@ -965,30 +1135,74 @@ function BoardGame(o){
   function sync(){q('levelSet').classList.toggle('hidden',val('mode')!=='ai');}
   radios('mode').forEach(r=>r.addEventListener('change',sync));
   function openSheet(first){
-    radios('mode').forEach(r=>r.checked=r.value===mode);
+    radios('mode').forEach(r=>r.checked=r.value===(net?'online':mode));
     radios('level').forEach(r=>r.checked=+r.value===level);
+    q('oerr').textContent='';
     sync(); q('close').classList.toggle('hidden',!!first); q('sheet').classList.remove('hidden');
   }
   q('close').onclick=()=>q('sheet').classList.add('hidden');
   q('settings').onclick=()=>{if(!busy) openSheet(false);};
-  q('start').onclick=()=>{
-    const nm=val('mode'); if(nm!==mode) score=[0,0];
+  q('start').onclick=async()=>{
+    const nm=val('mode');
+    if(nm==='online'){
+      const b=q('start'); b.disabled=true; b.textContent='Đang tạo phòng…'; q('oerr').textContent='';
+      try{const id=await Net.create(o.game); q('sheet').classList.add('hidden'); location.hash=Net.roomLink(o.route,id);}
+      catch(e){q('oerr').textContent='Không tạo được phòng, thử lại nhé.';}
+      b.disabled=false; b.textContent='Bắt đầu chơi'; return;
+    }
+    if(net) leaveOnline();
+    if(nm!==mode) score=[0,0];
     mode=nm; level=+val('level'); q('sheet').classList.add('hidden'); Snd.beep(660,0.08); newGame();
   };
   function auto(){
-    if(!started||busy||res||isAI(st.turn)||promoCands||!q('sheet').classList.contains('hidden')) return;
+    if(!started||busy||res||isAI(st.turn)||promoCands||!myTurn()||(net&&net.side<0)||!q('sheet').classList.contains('hidden')) return;
     busy=true; sel=-1; render();
-    setTimeout(()=>{const m=think(3,2500); busy=false; if(m) move(m); else render();},30);
+    setTimeout(()=>{const m=think(3,2500); busy=false; if(m&&ms.includes(m)&&myTurn()) move(m); else render();},30);
+  }
+  /* --- online --- */
+  const same=(a,b)=>a.f===b.f&&a.t===b.t&&(a.promo||'')===(b.promo||'');
+  function syncMoves(list){
+    const prefix=mlist.length<=list.length&&mlist.every((m,i)=>same(m,list[i]));
+    const fresh=!prefix;
+    if(fresh){st=E.initial(); hist=[]; mlist=[]; sel=-1; compute(); hideWin();}
+    if(promoCands&&list.length!==mlist.length){promoCands=null; q('promo').classList.add('hidden');}
+    for(let i=mlist.length;i<list.length;i++){
+      const m=ms.find(x=>same(x,list[i])); if(!m) break;
+      move(m,true,fresh||i<list.length-1);
+    }
+    render();
+  }
+  function startOnline(id){
+    if(net) net.stop();
+    if(!offScore) offScore=score;
+    score=[0,0]; st=E.initial(); hist=[]; mlist=[]; sel=-1; busy=false; promoCands=null; started=true; netStatus='';
+    if(q('promo')) q('promo').classList.add('hidden');
+    q('sheet').classList.add('hidden'); hideWin(); compute();
+    net=Net.session(o.game,id,st2=>syncMoves(st2.moves),(stt)=>{netStatus=stt; render();});
+    render();
+  }
+  function leaveOnline(){
+    if(!net) return;
+    net.stop(); net=null; netStatus='';
+    score=offScore||[0,0]; offScore=null;
+    st=E.initial(); hist=[]; mlist=[]; sel=-1; busy=false; promoCands=null;
+    if(q('promo')) q('promo').classList.add('hidden');
+    hideWin();
+    const had=load(); compute(); render();
+    if(!had) openSheet(true); else if(!res&&isAI(st.turn)) aiTurn();
   }
   return {
     auto,
-    enter(){
+    enter(room){
+      if(room){ if(!net||net.id!==room) startOnline(room); else render(); return; }
+      if(net){ leaveOnline(); return; }
       if(!started){
         if(load()){started=true; compute(); render(); if(!res&&isAI(st.turn)) aiTurn();}
         else {compute(); render(); openSheet(true);}
       } else render();
     },
     playing(){
+      if(net) return false;
       if(started) return mlist.length>0&&!res;
       try{const d=JSON.parse(localStorage.getItem(o.key)||'null'); return !!(d&&d.moves&&d.moves.length);}catch(e){return false;}
     }
@@ -1115,7 +1329,7 @@ const ChessEngine=(function(){
 })();
 
 const Chess=BoardGame({
-  id:'ch', key:'goc-co-chess', engine:ChessEngine,
+  id:'ch', key:'goc-co-chess', engine:ChessEngine, game:'chess', route:'co-vua', view:'v-chess', sides:['Trắng','Đen'],
   color:s=>s==null?'var(--ink)':'var(--ink)',
   build(el,tap){
     const files='abcdefgh';
@@ -1269,7 +1483,7 @@ const XqEngine=(function(){
 })();
 
 const Xq=BoardGame({
-  id:'xq', key:'goc-co-xq', engine:XqEngine,
+  id:'xq', key:'goc-co-xq', engine:XqEngine, game:'xq', route:'co-tuong', view:'v-xq', sides:['Đỏ','Đen'],
   color:s=>s===0?'var(--act1)':'var(--ink)',
   build(el,tap){
     const X=c=>50+c*100, Y=r=>50+r*100;
@@ -1320,13 +1534,15 @@ const Xq=BoardGame({
   const ROUTES={'':'home','caro':'caro','co-vua':'chess','co-tuong':'xq'};
   const TITLES={home:'Góc Cờ',caro:'Caro – Góc Cờ',chess:'Cờ vua – Góc Cờ',xq:'Cờ tướng – Góc Cờ'};
   function route(){
-    const v=ROUTES[location.hash.slice(1)]||'home';
+    const [path,qs]=location.hash.slice(1).split('?');
+    const room=new URLSearchParams(qs||'').get('r');
+    const v=ROUTES[path]||'home';
     document.body.dataset.view=v;
     document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on',el.id==='v-'+v));
     document.title=TITLES[v];
-    if(v==='caro') window.Caro.enter();
-    else if(v==='chess') Chess.enter();
-    else if(v==='xq') Xq.enter();
+    if(v==='caro') window.Caro.enter(room);
+    else if(v==='chess') Chess.enter(room);
+    else if(v==='xq') Xq.enter(room);
     else {
       document.getElementById('bd-caro').classList.toggle('hidden',!window.Caro.playing());
       document.getElementById('bd-chess').classList.toggle('hidden',!Chess.playing());
