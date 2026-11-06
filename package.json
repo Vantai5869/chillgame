@@ -1,0 +1,12 @@
+{
+  "name": "chillgame",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Góc Cờ + thống kê lượt truy cập",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  }
+}
