@@ -599,7 +599,7 @@ const Snd=(function(){
     if(!focused){focused=true; requestDraw();}
     const d={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[e.key];
     if(d){e.preventDefault(); const r=cursor.r+d[0], c=cursor.c+d[1]; if(inPlay(r,c)){cursor={r,c}; ensureVisible(r,c); requestDraw();}}
-    else if(e.key==='Enter'||e.key===' '){e.preventDefault(); human(cursor.r,cursor.c);}
+    else if(e.key==='Enter'){e.preventDefault(); human(cursor.r,cursor.c);}
     else if(e.key==='+'||e.key==='='){zoomAt(W/2,H/2,1.2);}
     else if(e.key==='-'){zoomAt(W/2,H/2,1/1.2);}
   });
@@ -678,17 +678,18 @@ const Snd=(function(){
     }
     return out.length?out:[[0,0]];
   }
-  function aiMove(){
-    const lvl=cfg.level, def=lvl===1?0.6:lvl===2?0.95:1.1;
-    const sc=candidates().map(([r,c])=>({r,c,s:evalPoint(r,c,'O')+evalPoint(r,c,'X')*def+Math.random()*(lvl===1?400:5)}))
+  function aiMove(me='O',lvl=cfg.level){
+    const op=me==='O'?'X':'O';
+    const def=lvl===1?0.6:lvl===2?0.95:1.1;
+    const sc=candidates().map(([r,c])=>({r,c,s:evalPoint(r,c,me)+evalPoint(r,c,op)*def+Math.random()*(lvl===1?400:5)}))
       .sort((a,b)=>b.s-a.s);
     if(lvl===3){
       let best=sc[0], bv=-Infinity;
       for(const m of sc.slice(0,8)){
-        const k=K(m.r,m.c); stones.set(k,'O');
-        if(winLine(m.r,m.c,'O')){stones.delete(k); return [m.r,m.c];}
+        const k=K(m.r,m.c); stones.set(k,me);
+        if(winLine(m.r,m.c,me)){stones.delete(k); return [m.r,m.c];}
         let reply=0;
-        for(const [r,c] of candidates()){const v=evalPoint(r,c,'X')+evalPoint(r,c,'O')*0.5; if(v>reply) reply=v;}
+        for(const [r,c] of candidates()){const v=evalPoint(r,c,op)+evalPoint(r,c,me)*0.5; if(v>reply) reply=v;}
         stones.delete(k);
         const v=m.s-reply*0.7; if(v>bv){bv=v; best=m;}
       }
@@ -784,7 +785,8 @@ const Snd=(function(){
   } else {
     updateUI();
   }
-  window.Caro={enter(){readColors(); requestDraw(); if(!bounds){openSheet(); $('sheetClose').classList.add('hidden');}}, playing:()=>moves.length>0&&!over};
+  window.Caro={enter(){readColors(); requestDraw(); if(!bounds){openSheet(); $('sheetClose').classList.add('hidden');}}, playing:()=>moves.length>0&&!over,
+    auto(){if(over||busy||isAI(turn)||!bounds||!$('sheet').classList.contains('hidden')) return; const [r,c]=aiMove(turn,3); human(r,c); ensureVisible(r,c);}};
 
 })();
 
@@ -902,17 +904,17 @@ function BoardGame(o){
     if(!legal) return E.terminal(s,ply);
     return best;
   }
-  function think(){
+  function think(lvl=level,budgetOv){
     if(!ms.length) return null;
     if(ms.length===1) return ms[0];
     nodes=0; stop=false; killers=[]; hh=new Map();
     const sign=st.turn===0?1:-1;
-    if(level===1){
+    if(lvl===1){
       let best=ms[0], bv=-INF;
       for(const m of ms){const n=E.play(st,m); const v=E.evaluate(n)*sign+Math.random()*160; if(v>bv){bv=v; best=m;}}
       return best;
     }
-    const t0=performance.now(), budget=level===2?700:2600, maxD=level===2?3:24;
+    const t0=performance.now(), budget=budgetOv||(lvl===2?700:2600), maxD=lvl===2?3:24;
     deadline=t0+budget;
     let order=ms.slice().sort(()=>Math.random()-.5); sortMoves(st,order,0);
     let best=order[0];
@@ -929,7 +931,7 @@ function BoardGame(o){
       think.depth=d;
       order.sort((x,y)=>(sc.has(y)?sc.get(y):-INF)-(sc.has(x)?sc.get(x):-INF));
       if(Math.abs(a)>9e5) break;
-      if(performance.now()-t0>budget*0.45) break;
+      if(!budgetOv&&performance.now()-t0>budget*0.45) break;
     }
     return best;
   }
@@ -973,7 +975,13 @@ function BoardGame(o){
     const nm=val('mode'); if(nm!==mode) score=[0,0];
     mode=nm; level=+val('level'); q('sheet').classList.add('hidden'); Snd.beep(660,0.08); newGame();
   };
+  function auto(){
+    if(!started||busy||res||isAI(st.turn)||promoCands||!q('sheet').classList.contains('hidden')) return;
+    busy=true; sel=-1; render();
+    setTimeout(()=>{const m=think(3,2500); busy=false; if(m) move(m); else render();},30);
+  }
   return {
+    auto,
     enter(){
       if(!started){
         if(load()){started=true; compute(); render(); if(!res&&isAI(st.turn)) aiTurn();}
@@ -1328,6 +1336,17 @@ const Xq=BoardGame({
   document.querySelectorAll('[data-home]').forEach(b=>b.addEventListener('click',()=>{location.hash='';}));
   addEventListener('hashchange',route);
   route();
+  /* giữ phím Space: tự đi nước tốt nhất cho bên đang tới lượt */
+  let holdTimer=null;
+  const autoStep=()=>{const v=document.body.dataset.view; if(v==='caro') window.Caro.auto(); else if(v==='chess') Chess.auto(); else if(v==='xq') Xq.auto();};
+  const stopHold=()=>{clearInterval(holdTimer); holdTimer=null;};
+  addEventListener('keydown',e=>{
+    if(e.code!=='Space'||/^(TEXTAREA|SELECT)$/.test(e.target.tagName)||(e.target.tagName==='INPUT'&&e.target.type==='text')) return;
+    e.preventDefault(); e.stopPropagation();
+    if(!holdTimer){autoStep(); holdTimer=setInterval(autoStep,200);}
+  },true);
+  addEventListener('keyup',e=>{if(e.code==='Space'){e.preventDefault(); stopHold();}},true);
+  addEventListener('blur',stopHold);
 })();
 </script>
 <script>fetch("/api/visits",{method:"POST",keepalive:true}).catch(function(){});</script>
