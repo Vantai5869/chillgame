@@ -34,7 +34,7 @@ module.exports = async function handler(req, res) {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
     await sql`
-      INSERT INTO visits (id, ip, location, user_agent, referrer)
+      INSERT INTO game_visits (id, ip, location, user_agent, referrer)
       VALUES (${id}, ${ip}, ${location}, ${userAgent}, ${referrer})
     `;
   } catch (err) {

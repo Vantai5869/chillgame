@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
       count(DISTINCT ip)::int AS unique_ips,
       count(*) FILTER (WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh')::int AS today,
       count(*) FILTER (WHERE created_at >= now() - interval '7 days')::int AS week
-    FROM visits
+    FROM game_visits
   `;
 
   const byIp = await sql`
@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
            (array_agg(user_agent ORDER BY created_at DESC))[1] AS "userAgent",
            min(created_at) AS "firstSeen",
            max(created_at) AS "lastSeen"
-    FROM visits
+    FROM game_visits
     GROUP BY ip
     ORDER BY "lastSeen" DESC
     LIMIT 300
@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
 
   const recent = await sql`
     SELECT ip, location, user_agent AS "userAgent", referrer, created_at AS "createdAt"
-    FROM visits
+    FROM game_visits
     ORDER BY created_at DESC
     LIMIT 300
   `;
